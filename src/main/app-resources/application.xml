@@ -11,8 +11,8 @@
         <default>S2MSI2A</default>
           </options>
          </parameter>
-          <parameter id="startdate" title="Start date" abstract="Start date of the Sentinel data (fe 2018-05-15)" scope="runtime">2018-04-01</parameter>
-        <parameter id="enddate" title="End date" abstract="End date of the Sentinel data  (fe 2018-05-15)" scope="runtime">2018-05-01</parameter>
+          <parameter id="startdate" title="Start date" abstract="Start date of the Sentinel data (fe 2018-05-15)" scope="runtime" minOccurs="1" maxOccurs="1">2018-04-01</parameter>
+        <parameter id="enddate" title="End date" abstract="End date of the Sentinel data  (fe 2018-05-15)" scope="runtime" minOccurs="1" maxOccurs="1">2018-05-01</parameter>
         <parameter id="bounding_area" title="Area of interest" abstract="Specify a WKT polygon as boundary" scope="runtime">POLYGON((3.362 51.44,3.889 51.193,4.263 51.385,4.922 51.468,5.427 51.317,5.779 51.055,5.757 50.931,6.306 51.577,6.13 51.876,6.636 51.944,6.943 52.201,6.987 52.483,6.768 52.59,7.141 52.962,7.207 53.383,6.548 53.462,5.801 53.423,5.339 53.239,5.471 52.869,5.559 52.55,4.966 52.362,5.186 52.71,5.01 52.829,4.812 53.081,4.504 52.295,3.955 51.863,3.362 51.44))</parameter>
       </defaultParameters>
             <defaultJobconf>
