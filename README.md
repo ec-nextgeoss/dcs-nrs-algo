@@ -91,4 +91,3 @@ Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/L
 
 ### <a name="funding"></a>Funding
 
-Put here any information about the funding.
