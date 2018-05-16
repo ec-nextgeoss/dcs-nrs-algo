@@ -1,30 +1,43 @@
 <?xml version="1.0" encoding="us-ascii"?>
 <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="application">
   <jobTemplates>
-    <jobTemplate id="template_A">
+    <jobTemplate id="query">
       <streamingExecutable>/application/node_A/run.py</streamingExecutable>
-    </jobTemplate>
-    <jobTemplate id="template_B">
-      <streamingExecutable>/application/node_B/run.py</streamingExecutable>
-      <defaultJobconf>
+       <defaultParameters>           
+        <parameter id="type" title="Product type" abstract="Select the Sentinel product type" scope="runtime" minOccurs="1" maxOccurs="1">
+			<options>
+				<option>S2MSI2A</option>
+				<option>S2MSI1C</option>
+        <default>S2MSI2A</default>
+          </options>
+         </parameter>
+          <parameter id="startdate" title="Start date" abstract="Start date of the Sentinel data (fe 2018-05-15)" scope="runtime">2018-04-01</parameter>
+        <parameter id="enddate" title="End date" abstract="End date of the Sentinel data  (fe 2018-05-15)" scope="runtime">2018-05-01</parameter>
+        <parameter id="bounding_area" title="Area of interest" abstract="Specify a WKT polygon as boundary" scope="runtime">POLYGON((3.362 51.44,3.889 51.193,4.263 51.385,4.922 51.468,5.427 51.317,5.779 51.055,5.757 50.931,6.306 51.577,6.13 51.876,6.636 51.944,6.943 52.201,6.987 52.483,6.768 52.59,7.141 52.962,7.207 53.383,6.548 53.462,5.801 53.423,5.339 53.239,5.471 52.869,5.559 52.55,4.966 52.362,5.186 52.71,5.01 52.829,4.812 53.081,4.504 52.295,3.955 51.863,3.362 51.44))</parameter>
+      </defaultParameters>
+            <defaultJobconf>
         <!-- By setting this property with value 1, the node will act as 'aggregator.
              That is only one instance of the node will run on the cluster -->
         <property id="ciop.job.max.tasks">1</property>
       </defaultJobconf>
     </jobTemplate>
+    <jobTemplate id="lai">
+      <streamingExecutable>/application/node_B/run.py</streamingExecutable>
+
+    </jobTemplate>
   </jobTemplates>
-    <workflow id="workflow" title="Simple workflow" abstract="Simple workflow based on the DCS Python archetype">
+    <workflow id="workflow" title="LAI" abstract="Determine LAI for the Netherlands">
     <workflowVersion>1.0</workflowVersion>
-    <node id="node_A">
-      <job id="template_A"/>
+    <node id="node_search">
+      <job id="query"/>
       <sources>
-        <source id="source" title="Simple string sources" abstract="List of comma-separated strings" refid="string:list" scope="runtime">input-1,input-2,input-3</source>
+        <source refid="string:list">thisIsNotUsed</source>
       </sources>
     </node>
-    <node id="node_B">
-      <job id="template_B"/>
+    <node id="node_lai">
+      <job id="lai"/>
       <sources>
-        <source refid="wf:node">node_A</source>
+        <source refid="wf:node">node_search</source>
       </sources>
     </node>
   </workflow>
