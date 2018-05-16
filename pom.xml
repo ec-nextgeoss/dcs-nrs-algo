@@ -15,13 +15,13 @@
   <properties>
     <summary>Extract EBV LAI</summary>
     <description>Pilot for extracting EBV-LAI from sentinel2</description>
-    <community>nextGeoss</community>
-    <yumRepo>nextGeoss</yumRepo>
+    <community>ec-nextgeoss</community>
+    <yumRepo>ec-nextgeoss</yumRepo>
   </properties>
   <scm>
-    <connection>scm:git:ssh://git@github.com/nextGeoss/ebv_lai</connection>
-    <developerConnection>scm:git:ssh://git@github.com/nextGeoss/ebv_lai</developerConnection>
-    <url>https://github.com/nextGeoss/ebv_lai</url>
+    <connection>scm:git:ssh://git@github.com/ec-nextgeoss/ebv_lai</connection>
+    <developerConnection>scm:git:ssh://git@github.com/ec-nextgeoss/ebv_lai</developerConnection>
+    <url>https://github.com/ec-nextgeoss/ebv_lai</url>
     <tag>HEAD</tag>
   </scm>
   <profiles>
