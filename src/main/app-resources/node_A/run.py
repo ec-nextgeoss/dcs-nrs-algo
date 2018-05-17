@@ -23,9 +23,12 @@ for input in sys.stdin:
     log_input(boundingarea)
     log_input(prod_type)
     search_params = dict([('start',start),('stop', stop), ('geom', boundingarea), ('pt', prod_type)]) 
-    search_result = ciop.search(end_point="https://catalog.terradue.com/sentinel2/search", params=search_params)
+    search_result = ciop.search(end_point="https://catalog.terradue.com/sentinel2/search", params=search_params, output_fields='self')
     # Log the input
-    log_input(input)
+   
+    for elem in search_result:
+        ciop.publish(sources=elem.values()[0] + '\n', mode = 'silent')
+    #log_input(input)
     # Just pass the input reference to the next node
     #pass_next_node(input)
-    ciop.publish(sources=search_result, mode='silent')
+    #ciop.publish(sources=values, mode='silent')
