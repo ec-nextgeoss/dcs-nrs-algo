@@ -50,6 +50,9 @@
                     <require>miniconda</require>
                     <require>openjpeg2</require>
                   </requires>
+                  <postinstallScriptlet combine.self="override">
+                    <script>conda update conda -y &amp;&amp; conda install -y --file /application/dependencies/python/packages.list</script>
+                  </postinstallScriptlet>
                 </configuration>
               </execution>
             </executions>
