@@ -58,14 +58,18 @@ def calc_LAI(prod_name):
     step3 = ciop.tmp_dir + '/' + 'r3.tif'
     laifile = ciop.tmp_dir + '/' + prod_name
 
-    expr1 = '/opt/anaconda/bin/gdal_calc.py --calc="2.5 * (B - A)" -A ' + fnred + " -B " + fnnir + " --outfile=" + step1
-    expr2 = '/opt/anaconda/bin/gdal_calc.py --calc="1 + B + 6 * A" -A ' + fnred + " -B " + fnnir + " --outfile=" + step2
-    expr3 = '/opt/anaconda/bin/gdal_calc.py --calc="B - 7.5 * A " -A ' + fnblue + " -B " + step2 + " --outfile=" + step3
-    expr4 = '/opt/anaconda/bin/gdal_calc.py --calc="(A / B) * 3.618 - 0.118" -A ' + step1 + " -B " + step3 + " --outfile=" + laifile
-    print(expr1)
+    expr1 = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-9999 --calc="2.5 * (B - A)" -A ' + fnred + " -B " + fnnir + " --outfile=" + step1
+    expr2 = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-9999 --calc="1 + B + 6 * A" -A ' + fnred + " -B " + fnnir + " --outfile=" + step2
+    expr3 = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-9999 --calc="B - 7.5 * A " -A ' + fnblue + " -B " + step2 + " --outfile=" + step3
+    expr4 = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-9999 --calc="(B <> 0) * ((A / B) * 3.618 - 0.118) + (B == 0) * 20" -A ' + step1 + " -B " + step3 + " --outfile=" + laifile
+
+    ciop.log("INFO",expr1)
     os.system(expr1)
+    ciop.log("INFO",expr2)
     os.system(expr2)
+    ciop.log("INFO",expr3)
     os.system(expr3)
+    ciop.log("INFO",expr4)
     os.system(expr4)
 
     # Of course keep LAI
