@@ -41,13 +41,11 @@ def extract_R_B_NIR(sentinel_zip) :
         src_ds = None
         dst_ds = None
 
-    filelist = os.listdir(ciop.tmp_dir)
-    print(filelist)
-    #cleanup
-    #if os.path.isfile(sentinel_zip):
-    #    os.remove(sentinel_zip)
+    parts = os.path.splitext(os.path.basename(sentinel_zip))
+    prod_name = parts[0] + '_lai.tif'
+    return prod_name
 
-def calc_LAI():
+def calc_LAI(prod_name):
     # define the input bands
     outname = ['Blue.tif', 'Red.tif', 'NIR.tif']
 
@@ -58,33 +56,22 @@ def calc_LAI():
     step1 = ciop.tmp_dir + '/' + 'r1.tif'
     step2 = ciop.tmp_dir + '/' + 'r2.tif'
     step3 = ciop.tmp_dir + '/' + 'r3.tif'
-    step4 = ciop.tmp_dir + '/' + 'lai.tif'
+    laifile = ciop.tmp_dir + '/' + prod_name
 
     expr1 = '/opt/anaconda/bin/gdal_calc.py --calc="2.5 * (B - A)" -A ' + fnred + " -B " + fnnir + " --outfile=" + step1
     expr2 = '/opt/anaconda/bin/gdal_calc.py --calc="1 + B + 6 * A" -A ' + fnred + " -B " + fnnir + " --outfile=" + step2
     expr3 = '/opt/anaconda/bin/gdal_calc.py --calc="B - 7.5 * A " -A ' + fnblue + " -B " + step2 + " --outfile=" + step3
-    expr4 = '/opt/anaconda/bin/gdal_calc.py --calc="(A / B) * 3.618 - 0.118" -A ' + step1 + " -B " + step3 + " --outfile=" + step4
+    expr4 = '/opt/anaconda/bin/gdal_calc.py --calc="(A / B) * 3.618 - 0.118" -A ' + step1 + " -B " + step3 + " --outfile=" + laifile
     print(expr1)
     os.system(expr1)
     os.system(expr2)
     os.system(expr3)
     os.system(expr4)
 
-    #cleanup
-    print("Cleanup after LAI")
-    os.remove(fnblue)
-    filelist = os.listdir(ciop.tmp_dir)
-    print(filelist)
-    os.remove(fnred)
-    os.remove(fnnir)
-    if os.path.isfile(step1):
-        os.remove(step1)
-    if os.path.isfile(step2):
-        os.remove(step2)
-    if os.path.isfile(step3):
-        os.remove(step3)
-
     # Of course keep LAI
+    lailist = []
+    lailist.append(laifile)
+    return lailist
 
 # Input references come from STDIN (standard input) and they are retrieved
 # line-by-line.
@@ -98,10 +85,10 @@ for input in sys.stdin:
     for v in url_list:
         url = v.values()[0]
         ciop.log("INFO", url)
-        #ciop.copy(url, ciop.tmp_dir)
+        res = ciop.copy(url, ciop.tmp_dir, extract=False)
+        prod_name = extract_R_B_NIR(res)
+        ciop.log("INFO", prod_name)
+        lairesult = calc_LAI(prod_name)
+        for curlai in lairesult:
+            ciop.publish (curlai, metalink=True)
 
-res = ciop.copy("file:///data/S2A_MSIL2A_20180501T105031_N0207_R051_T31UEU_20180501T144449.zip", ciop.tmp_dir, extract = False)
-ciop.log("INFO", res)
-
-extract_R_B_NIR(res)
-calc_LAI()
