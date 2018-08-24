@@ -45,6 +45,7 @@ def extract_R_B_NIR(sentinel_zip) :
     prod_name = parts[0] + '_lai.tif'
     return prod_name
 
+# Calculate LAI with uncalibrated Sentinel2 input data. This means that the scale factor of 10000 needs to be handled here
 def calc_LAI(prod_name):
     # define the input bands
     outname = ['Blue.tif', 'Red.tif', 'NIR.tif']
@@ -53,24 +54,16 @@ def calc_LAI(prod_name):
     fnblue = ciop.tmp_dir + '/' + outname[0]
     fnred = ciop.tmp_dir + '/' + outname[1]
     fnnir = ciop.tmp_dir + '/' + outname[2]
-    step1 = ciop.tmp_dir + '/' + 'r1.tif'
-    step2 = ciop.tmp_dir + '/' + 'r2.tif'
-    step3 = ciop.tmp_dir + '/' + 'r3.tif'
     laifile = ciop.tmp_dir + '/' + prod_name
 
-    expr1 = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-9999 --calc="2.5 * (B - A)" -A ' + fnred + " -B " + fnnir + " --outfile=" + step1
-    expr2 = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-9999 --calc="1 + B + 6 * A" -A ' + fnred + " -B " + fnnir + " --outfile=" + step2
-    expr3 = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-9999 --calc="B - 7.5 * A " -A ' + fnblue + " -B " + step2 + " --outfile=" + step3
-    expr4 = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-9999 --calc="(B <> 0) * ((A / B) * 3.618 - 0.118) + (B == 0) * 20" -A ' + step1 + " -B " + step3 + " --outfile=" + laifile
+#   expr_cal is the expression expecting calibrated Sentinel2 input with reflectances instead of DN's
+#   expr_cal = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-0 --calc="3.618 * (2.5 * (C - B) / (1 + C + 6 * B - 7.5 * A)) - 0.118" -A ' + fnblue + " -B " + fnred + " -C " + fnnir + " --outfile=" + laifile
 
-    ciop.log("INFO",expr1)
-    os.system(expr1)
-    ciop.log("INFO",expr2)
-    os.system(expr2)
-    ciop.log("INFO",expr3)
-    os.system(expr3)
-    ciop.log("INFO",expr4)
-    os.system(expr4)
+#   expr_nocal is the expression expecting uncalibrated Sentinel2 input, so DN's in the range between 0 and 10000
+    expr_nocal = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-0 --calc="3.618 * (2.5 * (C - B) / (10000 + C + 6 * B - 7.5 * A)) - 0.118" -A ' + fnblue + " -B " + fnred + " -C " + fnnir + " --outfile=" + laifile
+
+    ciop.log("INFO",expr_nocal)
+    os.system(expr_nocal)
 
     # Of course keep LAI
     lailist = []
