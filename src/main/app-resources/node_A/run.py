@@ -15,14 +15,16 @@ from util import pass_next_node
 for input in sys.stdin:
     start = ciop.getparam('startdate')
     stop = ciop.getparam('enddate')
+    cloudcover = ciop.getparam('cloud_cover')
     boundingarea = ciop.getparam('bounding_area')
     prod_type = ciop.getparam('type')
     log_input('searching with:')
     log_input(start)
     log_input(stop)
+    log_input(cloudcover)
     log_input(boundingarea)
     log_input(prod_type)
-    search_params = dict([('start',start),('stop', stop), ('geom', boundingarea), ('pt', prod_type)]) 
+    search_params = dict([('start',start),('stop', stop), ('geom', boundingarea), ('pt', prod_type), ('cc', cloudcover)]) 
     search_result = ciop.search(end_point="https://catalog.terradue.com/sentinel2/search", params=search_params, output_fields='self')
     # Log the input
    
