@@ -3,7 +3,9 @@
 # platform: linux-64
 asn1crypto=0.22.0=py27_0
 backports_abc=0.5=py27h7b3c97b_0
+blas=1.0=mkl
 bokeh=0.12.16=py27_0
+bzip2=1.0.6=h14c3975_5
 ca-certificates=2018.03.07=0
 cairo=1.14.8=0
 cffi=1.10.0=py27_0
@@ -105,7 +107,7 @@ requests=2.14.2=py27_0
 ruamel_yaml=0.11.14=py27_0
 scikit-image=0.13.1=py27h14c3975_1
 scipy=1.1.0=py27hfc37229_0
-sen2cor=2.3.0=py27_0
+sen2cor=2.5.5=py27h3b1657f_0
 setuptools=23.0.0=py27_0
 singledispatch=3.4.0.3=py27h9bcb476_0
 sip=4.18.1=py27he9ba0ab_2
