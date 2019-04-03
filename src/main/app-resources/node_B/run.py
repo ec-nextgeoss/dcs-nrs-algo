@@ -60,7 +60,7 @@ def calc_LAI(prod_name):
 #   expr_cal = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-0 --calc="3.618 * (2.5 * (C - B) / (1 + C + 6 * B - 7.5 * A)) - 0.118" -A ' + fnblue + " -B " + fnred + " -C " + fnnir + " --outfile=" + laifile
 
 #   expr_nocal is the expression expecting uncalibrated Sentinel2 input, so DN's in the range between 0 and 10000
-    expr_nocal = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-0 --calc="3.618 * (2.5 * (C - B) / (10000 + C + 6 * B - 7.5 * A)) - 0.118" -A ' + fnblue + " -B " + fnred + " -C " + fnnir + " --outfile=" + laifile
+    expr_nocal = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=0 --calc="3.618 * (2.5 * (1.0*C - B) / (10000 + C + 6 * B - 7.5 * A)) - 0.118" -A ' + fnblue + " -B " + fnred + " -C " + fnnir + " --outfile=" + laifile
 
     ciop.log("INFO",expr_nocal)
     os.system(expr_nocal)
@@ -78,14 +78,15 @@ for input in sys.stdin:
     # instances of the previous node.
     log_input(input)
 
-    url_list = ciop.search(end_point = input, output_fields = "enclosure", params = dict())
-    for v in url_list:
-        url = v.values()[0]
-        ciop.log("INFO", url)
-        res = ciop.copy(url, ciop.tmp_dir, extract=False)
-        prod_name = extract_R_B_NIR(res)
-        ciop.log("INFO", prod_name)
-        lairesult = calc_LAI(prod_name)
-        for curlai in lairesult:
-            ciop.publish (curlai, metalink=True)
-
+    try:
+        url_list = ciop.search(end_point = input, output_fields = "enclosure", params = dict())
+        for v in url_list:
+            url = v.values()[0]
+            ciop.log("INFO", url)
+            res = ciop.copy(url, ciop.tmp_dir, extract=False)
+            prod_name = extract_R_B_NIR(res)
+            ciop.log("INFO", prod_name)
+            lairesult = calc_LAI(prod_name)
+            for curlai in lairesult:
+                ciop.publish (curlai, metalink=True)
+    except: ciop.log("INFO", "empty search result, skipping")

@@ -24,7 +24,8 @@ for input in sys.stdin:
     log_input(cloudcover)
     log_input(boundingarea)
     log_input(prod_type)
-    search_params = dict([('start',start),('stop', stop), ('geom', boundingarea), ('pt', prod_type), ('cc', cloudcover)]) 
+#    search_params = dict([('start',start),('stop', stop), ('geom', boundingarea), ('pt', prod_type), ('cc', cloudcover)]) 
+    search_params = dict([('start',start),('stop', stop), ('geom', boundingarea), ('pt', prod_type)]) 
     search_result = ciop.search(end_point="https://catalog.terradue.com/sentinel2/search", params=search_params, output_fields='self')
     # Log the input
    
