@@ -18,6 +18,10 @@ for input in sys.stdin:
     cloudcover = ciop.getparam('cloud_cover')
     boundingarea = ciop.getparam('bounding_area')
     prod_type = ciop.getparam('type')
+    # for test
+    password = ciop.getparam('storname')
+    ciop.log("INFO", "storname=|{}|".format(password))
+    # for test
     log_input('searching with:')
     log_input(start)
     log_input(stop)

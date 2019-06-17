@@ -54,7 +54,7 @@ def calc_LAI(prod_name):
     fnblue = ciop.tmp_dir + '/' + outname[0]
     fnred = ciop.tmp_dir + '/' + outname[1]
     fnnir = ciop.tmp_dir + '/' + outname[2]
-    laifile = ciop.tmp_dir + '/' + prod_name
+    laifile = '/tmp/' + prod_name
 
 #   expr_cal is the expression expecting calibrated Sentinel2 input with reflectances instead of DN's
 #   expr_cal = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-0 --calc="3.618 * (2.5 * (C - B) / (1 + C + 6 * B - 7.5 * A)) - 0.118" -A ' + fnblue + " -B " + fnred + " -C " + fnnir + " --outfile=" + laifile
@@ -66,9 +66,7 @@ def calc_LAI(prod_name):
     os.system(expr_nocal)
 
     # Of course keep LAI
-    lailist = []
-    lailist.append(laifile)
-    return lailist
+    return laifile
 
 # Input references come from STDIN (standard input) and they are retrieved
 # line-by-line.
@@ -87,6 +85,5 @@ for input in sys.stdin:
             prod_name = extract_R_B_NIR(res)
             ciop.log("INFO", prod_name)
             lairesult = calc_LAI(prod_name)
-            for curlai in lairesult:
-                ciop.publish (curlai, metalink=True)
+            ciop.publish (lairesult + '\n', mode = 'silent')
     except: ciop.log("INFO", "empty search result, skipping")

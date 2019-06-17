@@ -11,7 +11,7 @@
                     <default>S2MSI2A</default>
                 </options>
             </parameter>
-            <parameter id="startdate" title="Start date" abstract="Start date of the Sentinel data (fe 2018-05-15)" scope="runtime" minOccurs="1" maxOccurs="1">2018-05-01</parameter>
+            <parameter id="startdate" title="Start date" abstract="Start date of the Sentinel data (fe 2018-05-15)" scope="runtime" minOccurs="1" maxOccurs="1">2018-05-04</parameter>
             <parameter id="enddate" title="End date" abstract="End date of the Sentinel data  (fe 2018-05-15)" scope="runtime" minOccurs="1" maxOccurs="1">2018-05-08</parameter>
             <parameter id="cloud_cover" title="Cloud cover" abstract="Maximum cloud cover (in %)" scope="runtime" minOccurs="1" maxOccurs="1">10</parameter>
             <parameter id="bounding_area" title="Area of interest" abstract="Specify a WKT polygon as boundary" scope="runtime">POLYGON((6.77 51.73,6.95 51.73,6.95 51.83,6.77 51.83,6.77 51.73))</parameter>
@@ -24,7 +24,12 @@
     </jobTemplate>
     <jobTemplate id="lai">
       <streamingExecutable>/application/node_B/run.py</streamingExecutable>
-
+    </jobTemplate>
+    <jobTemplate id="sftp">
+      <streamingExecutable>/application/node_C/run.py</streamingExecutable>
+        <defaultParameters>           
+            <parameter id="storname" title="StorageName" abstract="Storage persistence" scope="runtime" type="LiteralData" minOccurs="1" maxOccurs="1"></parameter>            
+        </defaultParameters>
     </jobTemplate>
   </jobTemplates>
     <workflow id="workflow" title="LAI" abstract="Determine LAI for the Netherlands">
@@ -39,6 +44,12 @@
       <job id="lai"/>
       <sources>
         <source refid="wf:node">node_search</source>
+      </sources>
+    </node>
+    <node id ="node_sftp">
+      <job id="sftp"/>
+      <sources>
+        <source refid="wf:node">node_lai</source>
       </sources>
     </node>
   </workflow>
