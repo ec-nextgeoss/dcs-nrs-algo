@@ -1,30 +1,55 @@
 <?xml version="1.0" encoding="us-ascii"?>
 <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="application">
   <jobTemplates>
-    <jobTemplate id="template_A">
+    <jobTemplate id="query">
       <streamingExecutable>/application/node_A/run.py</streamingExecutable>
-    </jobTemplate>
-    <jobTemplate id="template_B">
-      <streamingExecutable>/application/node_B/run.py</streamingExecutable>
-      <defaultJobconf>
+        <defaultParameters>           
+            <parameter id="type" title="Product type" abstract="Select the Sentinel product type" scope="runtime" minOccurs="1" maxOccurs="1">
+                <options>
+                    <option>S2MSI2A</option>
+                    <option>S2MSI2Ap</option>
+                    <default>S2MSI2A</default>
+                </options>
+            </parameter>
+            <parameter id="startdate" title="Start date" abstract="Start date of the Sentinel data (fe 2018-05-15)" scope="runtime" minOccurs="1" maxOccurs="1">2018-05-04</parameter>
+            <parameter id="enddate" title="End date" abstract="End date of the Sentinel data  (fe 2018-05-15)" scope="runtime" minOccurs="1" maxOccurs="1">2018-05-08</parameter>
+            <parameter id="cloud_cover" title="Cloud cover" abstract="Maximum cloud cover (in %)" scope="runtime" minOccurs="1" maxOccurs="1">10</parameter>
+            <parameter id="bounding_area" title="Area of interest" abstract="Specify a WKT polygon as boundary" scope="runtime">POLYGON((6.77 51.73,6.95 51.73,6.95 51.83,6.77 51.83,6.77 51.73))</parameter>
+        </defaultParameters>
+        <defaultJobconf>
         <!-- By setting this property with value 1, the node will act as 'aggregator.
              That is only one instance of the node will run on the cluster -->
-        <property id="ciop.job.max.tasks">1</property>
-      </defaultJobconf>
+            <property id="ciop.job.max.tasks">1</property>
+        </defaultJobconf>
+    </jobTemplate>
+    <jobTemplate id="lai">
+      <streamingExecutable>/application/node_B/run.py</streamingExecutable>
+    </jobTemplate>
+    <jobTemplate id="sftp">
+      <streamingExecutable>/application/node_C/run.py</streamingExecutable>
+        <defaultParameters>           
+            <parameter id="storname" title="StorageName" abstract="Storage persistence" scope="runtime" type="LiteralData" minOccurs="1" maxOccurs="1"></parameter>            
+        </defaultParameters>
     </jobTemplate>
   </jobTemplates>
-    <workflow id="workflow" title="Simple workflow" abstract="Simple workflow based on the DCS Python archetype">
+    <workflow id="workflow" title="LAI" abstract="Determine LAI for the Netherlands">
     <workflowVersion>1.0</workflowVersion>
-    <node id="node_A">
-      <job id="template_A"/>
+    <node id="node_search">
+      <job id="query"/>
       <sources>
-        <source id="source" title="Simple string sources" abstract="List of comma-separated strings" refid="string:list" scope="runtime">input-1,input-2,input-3</source>
+        <source refid="string:list">thisIsNotUsed</source>
       </sources>
     </node>
-    <node id="node_B">
-      <job id="template_B"/>
+    <node id="node_lai">
+      <job id="lai"/>
       <sources>
-        <source refid="wf:node">node_A</source>
+        <source refid="wf:node">node_search</source>
+      </sources>
+    </node>
+    <node id ="node_sftp">
+      <job id="sftp"/>
+      <sources>
+        <source refid="wf:node">node_lai</source>
       </sources>
     </node>
   </workflow>
