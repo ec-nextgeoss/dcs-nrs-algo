@@ -19,7 +19,6 @@ transport=paramiko.Transport((host,port))
 username='nextgeoss'
 #password = os.environ.get('SFTP_PASSWORD')
 password = ciop.getparam('storname')
-ciop.log("INFO", "storname=|{}|".format(password))
 transport.connect(username=username,password=password)  # gives: CryptographyDeprecationWarning
 sftp=paramiko.SFTPClient.from_transport(transport)
 try:
@@ -32,7 +31,6 @@ except IOError:
 # line-by-line.
 for input in sys.stdin:
     fdata = input.strip()
-    ciop.log("INFO", "input=^{}^".format(fdata))
     _, name = os.path.split(fdata)   # extract name for destination
     ciop.log("INFO", "fname=^{}^".format(name))
     sftp.put(fdata,name)
