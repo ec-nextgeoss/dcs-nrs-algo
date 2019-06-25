@@ -35,7 +35,7 @@ funcsigs=1.0.2=py27_0
 futures=3.2.0=py27_0
 gdal=2.2.2=py27h3e23360_2
 geos=3.5.0=0
-glymur=0.8.6=pypi_0
+glymur=0.8.6=py27_0
 h5py=2.8.0=py27h39dcb92_0
 hdf4=4.2.12=0
 hdf5=1.8.18=h6792536_1
