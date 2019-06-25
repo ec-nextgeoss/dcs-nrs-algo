@@ -11,7 +11,7 @@
     <version>2.0.0</version>
   </parent>
   <description>Pilot for extracting EBV-LAI from sentinel2</description>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <properties>
     <summary>Extract EBV LAI</summary>
     <description>Pilot for extracting EBV-LAI from sentinel2</description>
@@ -28,10 +28,10 @@
     <profile>
       <id>package-app</id>
       <activation>
-         <property>
-           <name>env</name>
-           <value>ci</value>
-         </property>
+        <property>
+          <name>env</name>
+          <value>ci</value>
+        </property>
       </activation>
       <build>
         <plugins>
