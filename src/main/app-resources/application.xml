@@ -29,6 +29,7 @@
       <streamingExecutable>/application/node_C/run.py</streamingExecutable>
         <defaultParameters>           
             <parameter id="storname" title="StorageName" abstract="Storage persistence" scope="runtime" type="LiteralData" minOccurs="1" maxOccurs="1"></parameter>            
+            <parameter id="foldername" title="FolderName" abstract="Storage location" scope="runtime" type="LiteralData" minOccurs="1" maxOccurs="1"></parameter>            
         </defaultParameters>
     </jobTemplate>
   </jobTemplates>

@@ -31,11 +31,7 @@ for input in sys.stdin:
 #    search_params = dict([('start',start),('stop', stop), ('geom', boundingarea), ('pt', prod_type), ('cc', cloudcover)]) 
     search_params = dict([('start',start),('stop', stop), ('geom', boundingarea), ('pt', prod_type)]) 
     search_result = ciop.search(end_point="https://catalog.terradue.com/sentinel2/search", params=search_params, output_fields='self')
-    # Log the input
    
     for elem in search_result:
+        ciop.log("INFO", elem.values()[0])
         ciop.publish(sources=elem.values()[0] + '\n', mode = 'silent')
-    #log_input(input)
-    # Just pass the input reference to the next node
-    #pass_next_node(input)
-    #ciop.publish(sources=values, mode='silent')

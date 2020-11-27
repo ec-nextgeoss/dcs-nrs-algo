@@ -32,6 +32,7 @@ def extract_R_B_NIR(sentinel_zip) :
     for b in bands:
         src_ds = gdal.Open('/vsizip/%s/%s' %(sentinel_zip, bands[bindex]))
         dst_filename = ciop.tmp_dir + '/' + outname[bindex]
+        ciop.log("INFO", "Extracting band {}".format(b))
 
         fileformat = "GTiff"
         driver = gdal.GetDriverByName(fileformat)
@@ -75,15 +76,16 @@ for input in sys.stdin:
     # as 'aggregator' (see application.xml), it collects the inputs of all the
     # instances of the previous node.
     log_input(input)
+    ciop.log("INFO", "Running python {}".format(sys.version))
 
     try:
         url_list = ciop.search(end_point = input, output_fields = "enclosure", params = dict())
         for v in url_list:
             url = v.values()[0]
-            ciop.log("INFO", url)
+            ciop.log("INFO", "Copying tile: ^{}^".format(url))
             res = ciop.copy(url, ciop.tmp_dir, extract=False)
             prod_name = extract_R_B_NIR(res)
-            ciop.log("INFO", prod_name)
+            ciop.log("INFO", "Succesfully extracted product bands for ^{}^".format(prod_name))
             lairesult = calc_LAI(prod_name)
             ciop.publish (lairesult + '\n', mode = 'silent')
     except: ciop.log("INFO", "empty search result, skipping")
