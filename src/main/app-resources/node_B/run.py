@@ -4,6 +4,8 @@ import sys
 import os
 import re
 import gdal
+from osgeo.gdalconst import *
+import numpy as np
 from zipfile import ZipFile
 
 import cioppy
@@ -15,8 +17,8 @@ from util import log_input
 
 # workaround to get GDAL to read Sentinel2 L2A products as well
 # this works by accessing the bands from the zipfile directly
-# The sentinel zip image is opened and the R, B, NIR bands are copied to
-# separate tif files; the original zipfile can then be removed
+# The sentinel zip image is opened and the R, B, NIR bands are loaded;
+# the original zipfile can then be removed
 def extract_R_B_NIR(sentinel_zip) :
     ## vsizip bugfix
     os.environ['CPL_ZIP_ENCODING'] = 'UTF-8'
@@ -27,46 +29,78 @@ def extract_R_B_NIR(sentinel_zip) :
     bands = [x for x in zf.namelist() if re.match(tileREXP,x)]
     bands.sort()    #make sure the bands are in order 2 (blue), 4 (Red), 8a (NIR); the loop relies on this
 
-    # convert the needed bands to tiff
-    bindex = 0
+    # Read the data from the selected bands
+    bdata = []
+    proj = None
+    georef = None
     for b in bands:
-        src_ds = gdal.Open('/vsizip/%s/%s' %(sentinel_zip, bands[bindex]))
-        dst_filename = ciop.tmp_dir + '/' + outname[bindex]
-        ciop.log("INFO", "Extracting band {}".format(b))
+        ds = gdal.Open('/vsizip/%s/%s' %(sentinel_zip, b))
+        data = ds.ReadAsArray()
+        ciop.log("INFO", "Loaded band {}".format(b))
+        bdata.append(data)
+        ciop.log("INFO", "data size {},{}".format(data.shape[0], data.shape[1]))
 
-        fileformat = "GTiff"
-        driver = gdal.GetDriverByName(fileformat)
-        dst_ds = driver.CreateCopy(dst_filename, src_ds, strict=0)
+        if proj == None:
+            ciop.log("INFO", "Getting projection")
+            proj = ds.GetProjection()
+        if georef == None:
+            ciop.log("INFO", "Getting transform")
+            georef = ds.GetGeoTransform()
 
-        bindex += 1
-        src_ds = None
-        dst_ds = None
+        ds = None
+
+    ciop.log("INFO", "All bands loaded")
 
     parts = os.path.splitext(os.path.basename(sentinel_zip))
     prod_name = parts[0] + '_lai.tif'
-    return prod_name
+    return prod_name, bdata, proj, georef
 
-# Calculate LAI with uncalibrated Sentinel2 input data. This means that the scale factor of 10000 needs to be handled here
-def calc_LAI(prod_name):
-    # define the input bands
-    outname = ['Blue.tif', 'Red.tif', 'NIR.tif']
-
-    # get the names of the blue, red and nir data
-    fnblue = ciop.tmp_dir + '/' + outname[0]
-    fnred = ciop.tmp_dir + '/' + outname[1]
-    fnnir = ciop.tmp_dir + '/' + outname[2]
+# Calculate the LAI in memory.
+# data contains B2, B4, B8a (in that order); the data has not yet been scaled
+def calc_LAI_mem(prod_name, data, proj, georef):
     laifile = '/tmp/' + prod_name
 
-#   expr_cal is the expression expecting calibrated Sentinel2 input with reflectances instead of DN's
-#   expr_cal = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=-0 --calc="3.618 * (2.5 * (C - B) / (1 + C + 6 * B - 7.5 * A)) - 0.118" -A ' + fnblue + " -B " + fnred + " -C " + fnnir + " --outfile=" + laifile
+    ciop.log("INFO", "Start checks")
+    
+    bdata = data[0]
+    rdata = data[1]
+    ndata = data[2]
+    
+    # check if the data is in a valid range
+    rcheck = np.logical_and ( rdata > 0, rdata < 10000)
+    bcheck = np.logical_and ( bdata > 0, bdata < 10000)
+    ncheck = np.logical_and ( ndata > 0, ndata < 10000)
+    check = rcheck * bcheck * ncheck
+    
+    # make some space by removing non-needed large arrays
+    del [rcheck, bcheck, ncheck]
 
-#   expr_nocal is the expression expecting uncalibrated Sentinel2 input, so DN's in the range between 0 and 10000
-    expr_nocal = '/opt/anaconda/bin/gdal_calc.py --type=Float32 --NoDataValue=0 --calc="3.618 * (2.5 * (1.0*C - B) / (10000 + C + 6 * B - 7.5 * A)) - 0.118" -A ' + fnblue + " -B " + fnred + " -C " + fnnir + " --outfile=" + laifile
+    ciop.log("INFO", "Start calculation")
+    # numpy calculates with doubles, so after turn them into floats
+    lai_raw = np.where(check, (((((ndata - rdata) * 2.5 * 3.618) / (10000. + ndata + rdata * 6 - bdata * 7.5))) - 0.118), -999.)
+    vcheck = np.logical_and ( lai_raw > -1, lai_raw < 20)
+    lai = np.where(vcheck, lai_raw, -999.)
+    
+    ciop.log("INFO", "Calculation done")
+    lai = lai.astype(np.float32)
+    
+    ciop.log("INFO", "Start save result")
+    # Now write the lai to tiff
+    fileformat = "GTiff"
+    driver = gdal.GetDriverByName(fileformat)
+    ciop.log("INFO", "Tiff driver selected")
+    ciop.log("INFO", "Create tiff")
+    dst_ds = driver.Create(laifile, bdata.shape[0], bdata.shape[1], 1, GDT_Float32)
 
-    ciop.log("INFO",expr_nocal)
-    os.system(expr_nocal)
+    ciop.log("INFO", "Fill values")
+    dst_band = dst_ds.GetRasterBand(1)
+    dst_band.SetNoDataValue(-999.)
+    dst_band.WriteArray(lai)
 
-    # Of course keep LAI
+    ciop.log("INFO", "Set projection info")
+    dst_ds.SetGeoTransform(georef)
+    dst_ds.SetProjection(proj)
+
     return laifile
 
 # Input references come from STDIN (standard input) and they are retrieved
@@ -82,10 +116,13 @@ for input in sys.stdin:
         url_list = ciop.search(end_point = input, output_fields = "enclosure", params = dict())
         for v in url_list:
             url = v.values()[0]
-            ciop.log("INFO", "Copying tile: ^{}^".format(url))
-            res = ciop.copy(url, ciop.tmp_dir, extract=False)
-            prod_name = extract_R_B_NIR(res)
-            ciop.log("INFO", "Succesfully extracted product bands for ^{}^".format(prod_name))
-            lairesult = calc_LAI(prod_name)
+            ciop.log("INFO", "Copying tile: {}".format(url))
+            sentinel_zip = ciop.copy(url, ciop.tmp_dir, extract=False)
+            prod_name, bdata, proj, georef = extract_R_B_NIR(sentinel_zip)
+            ciop.log("INFO", "Succesfully loaded product bands for {}".format(prod_name))
+            lairesult = calc_LAI_mem(prod_name, bdata, proj, georef)
+            ciop.log("INFO", "Calculating LAI finished")
             ciop.publish (lairesult + '\n', mode = 'silent')
-    except: ciop.log("INFO", "empty search result, skipping")
+    except:
+        print("Unexpected error:", sys.exc_info()[0:2])
+        ciop.log("INFO", "empty search result, skipping")
