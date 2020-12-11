@@ -25,7 +25,7 @@ sftp=paramiko.SFTPClient.from_transport(transport)
 try:
     sftp.chdir(base_folder_name)
 except IOError:
-    ciop.log("INFO", "Creating base folder ^{}^".format(base_folder_name))
+    ciop.log("INFO", "Creating base folder {}".format(base_folder_name))
     sftp.mkdir(base_folder_name)
     sftp.chdir(base_folder_name)
 
@@ -33,21 +33,23 @@ except IOError:
 try:
     sftp.chdir(folder_name)
 except IOError:
-    ciop.log("INFO", "Creating data folder ^{}^".format(folder_name))
+    ciop.log("INFO", "Creating data folder {}".format(folder_name))
     sftp.mkdir(folder_name)
     sftp.chdir(folder_name)
 
 # Input references come from STDIN (standard input) and they are retrieved
 # line-by-line.
 for input in sys.stdin:
-    fdata = input.strip()
+    datastr = input.strip()
+    parts = datastr.split(';')
+    fdata = parts[0]
     _, name = os.path.split(fdata)   # extract name for destination
-    ciop.log("INFO", "Transferring: ^{}^".format(name))
+    ciop.log("INFO", "Transferring: {}".format(name))
     try:
         sftp.put(fdata,name)
         os.remove(fdata)
     except Exception:
-        ciop.log("ERROR", "Transfer of ^{}^ failed".format(name))
+        ciop.log("ERROR", "Transfer of {} failed".format(name))
     
 if sftp: sftp.close()
 if transport: transport.close()

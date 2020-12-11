@@ -14,12 +14,14 @@ ciop = cioppy.Cioppy()
 
 sys.path.append(os.environ['_CIOP_APPLICATION_PATH'] + '/util')
 from util import log_input
+import metadata_util
 
 # workaround to get GDAL to read Sentinel2 L2A products as well
 # this works by accessing the bands from the zipfile directly
 # The sentinel zip image is opened and the R, B, NIR bands are loaded;
 # the original zipfile can then be removed
 def extract_R_B_NIR(sentinel_zip) :
+    ciop.log("INFO", "Start loading data")
     ## vsizip bugfix
     os.environ['CPL_ZIP_ENCODING'] = 'UTF-8'
 
@@ -49,7 +51,7 @@ def extract_R_B_NIR(sentinel_zip) :
 
         ds = None
 
-    ciop.log("INFO", "All bands loaded")
+    ciop.log("INFO", "Succesfully loaded product bands for {}".format(prod_name))
 
     parts = os.path.splitext(os.path.basename(sentinel_zip))
     prod_name = parts[0] + '_lai.tif'
@@ -60,7 +62,7 @@ def extract_R_B_NIR(sentinel_zip) :
 def calc_LAI_mem(prod_name, data, proj, georef):
     laifile = '/tmp/' + prod_name
 
-    ciop.log("INFO", "Start checks")
+    ciop.log("INFO", "Checks for data out of range started")
     
     bdata = data[0]
     rdata = data[1]
@@ -75,16 +77,16 @@ def calc_LAI_mem(prod_name, data, proj, georef):
     # make some space by removing non-needed large arrays
     del [rcheck, bcheck, ncheck]
 
-    ciop.log("INFO", "Start calculation")
+    ciop.log("INFO", "Calculation started")
     # numpy calculates with doubles, so after turn them into floats
     lai_raw = np.where(check, (((((ndata - rdata) * 2.5 * 3.618) / (10000. + ndata + rdata * 6 - bdata * 7.5))) - 0.118), -999.)
     vcheck = np.logical_and ( lai_raw > -1, lai_raw < 20)
     lai = np.where(vcheck, lai_raw, -999.)
     
-    ciop.log("INFO", "Calculation done")
+    ciop.log("INFO", "Calculation finished")
     lai = lai.astype(np.float32)
     
-    ciop.log("INFO", "Start save result")
+    ciop.log("INFO", "Start saving LAI")
     # Now write the lai to tiff
     fileformat = "GTiff"
     driver = gdal.GetDriverByName(fileformat)
@@ -100,6 +102,8 @@ def calc_LAI_mem(prod_name, data, proj, georef):
     ciop.log("INFO", "Set projection info")
     dst_ds.SetGeoTransform(georef)
     dst_ds.SetProjection(proj)
+
+    ciop.log("INFO", "Saving LAI finished")
 
     return laifile
 
@@ -118,10 +122,19 @@ for input in sys.stdin:
             url = v.values()[0]
             ciop.log("INFO", "Copying tile: {}".format(url))
             sentinel_zip = ciop.copy(url, ciop.tmp_dir, extract=False)
+            
             prod_name, bdata, proj, georef = extract_R_B_NIR(sentinel_zip)
-            ciop.log("INFO", "Succesfully loaded product bands for {}".format(prod_name))
+            
+            ciop.log("INFO", "Extracting metadata")
+            parts = os.path.splitext(sentinel_zip)
+            lai_meta_name = '/tmp/' + parts[0] + '.xml'
+            ciop.log("INFO", "Metadatname: {}".format(lai_meta_name))
+            meta_dict = extractTileMetadata(sentinel_zip)
+            updateMetadata('nextgeoss_template.xml', lai_meta_name, meta_dict)
+            
             lairesult = calc_LAI_mem(prod_name, bdata, proj, georef)
-            ciop.log("INFO", "Calculating LAI finished")
+            lairesult = lairesult + ';' + lai_meta_name
+
             ciop.publish (lairesult + '\n', mode = 'silent')
     except:
         print("Unexpected error:", sys.exc_info()[0:2])
