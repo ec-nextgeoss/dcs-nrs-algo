@@ -3,6 +3,7 @@
 import sys
 import os
 import re
+from datetime import date
 import gdal
 from osgeo.gdalconst import *
 import numpy as np
@@ -14,7 +15,7 @@ ciop = cioppy.Cioppy()
 
 sys.path.append(os.environ['_CIOP_APPLICATION_PATH'] + '/util')
 from util import log_input
-import metadata_util
+import metadata_util as mu
 
 # workaround to get GDAL to read Sentinel2 L2A products as well
 # this works by accessing the bands from the zipfile directly
@@ -51,17 +52,16 @@ def extract_R_B_NIR(sentinel_zip) :
 
         ds = None
 
-    ciop.log("INFO", "Succesfully loaded product bands for {}".format(prod_name))
-
     parts = os.path.splitext(os.path.basename(sentinel_zip))
     prod_name = parts[0] + '_lai.tif'
+
+    ciop.log("INFO", "Succesfully loaded product bands for {}".format(prod_name))
+
     return prod_name, bdata, proj, georef
 
 # Calculate the LAI in memory.
 # data contains B2, B4, B8a (in that order); the data has not yet been scaled
-def calc_LAI_mem(prod_name, data, proj, georef):
-    laifile = '/tmp/' + prod_name
-
+def calc_LAI_mem(laifile, data, proj, georef):
     ciop.log("INFO", "Checks for data out of range started")
     
     bdata = data[0]
@@ -107,6 +107,7 @@ def calc_LAI_mem(prod_name, data, proj, georef):
 
     return laifile
 
+
 # Input references come from STDIN (standard input) and they are retrieved
 # line-by-line.
 for input in sys.stdin:
@@ -117,25 +118,34 @@ for input in sys.stdin:
     ciop.log("INFO", "Running python {}".format(sys.version))
 
     try:
+        template_path = os.path.dirname(os.path.realpath(__file__))
+        template = template_path + "/" + "nextgeoss_template.xml"
+            
         url_list = ciop.search(end_point = input, output_fields = "enclosure", params = dict())
         for v in url_list:
             url = v.values()[0]
             ciop.log("INFO", "Copying tile: {}".format(url))
             sentinel_zip = ciop.copy(url, ciop.tmp_dir, extract=False)
+            ciop.log("INFO", "Copying tile finished")
             
             prod_name, bdata, proj, georef = extract_R_B_NIR(sentinel_zip)
+
+            # determine output file names for LAI and metadata
+            laifile = '/tmp/' + prod_name       # the LAI product filename
+            parts = os.path.splitext(laifile)
+            lai_meta_name = parts[0] + '.xml'   # the metadata file for the LAI product
+            ciop.log("INFO", "Metadataname: {}".format(lai_meta_name))
             
-            ciop.log("INFO", "Extracting metadata")
-            parts = os.path.splitext(sentinel_zip)
-            lai_meta_name = '/tmp/' + parts[0] + '.xml'
-            ciop.log("INFO", "Metadatname: {}".format(lai_meta_name))
-            meta_dict = extractTileMetadata(sentinel_zip)
-            updateMetadata('nextgeoss_template.xml', lai_meta_name, meta_dict)
+            meta_dict = mu.extractTileMetadata(sentinel_zip)
+            ciop.log("INFO", "Extracting metadata from tile finished")
+
+            mu.updateMetadata(template, lai_meta_name, meta_dict)
+            ciop.log("INFO", "Metadata written to file")
             
-            lairesult = calc_LAI_mem(prod_name, bdata, proj, georef)
+            lairesult = calc_LAI_mem(laifile, bdata, proj, georef)
             lairesult = lairesult + ';' + lai_meta_name
 
-            ciop.publish (lairesult + '\n', mode = 'silent')
+            pub = ciop.publish (lairesult + '\n', mode = 'silent')
     except:
         print("Unexpected error:", sys.exc_info()[0:2])
         ciop.log("INFO", "empty search result, skipping")

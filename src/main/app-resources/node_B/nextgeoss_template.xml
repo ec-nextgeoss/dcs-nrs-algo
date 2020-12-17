@@ -10,7 +10,7 @@
       <gmd:MD_CharacterSetCode codeListValue="utf8" codeList="http://standards.iso.org/ittf/PubliclyAvailableStandards/ISO_19139_Schemas/resources/codelist/ML_gmxCodelists.xml#MD_CharacterSetCode"/>
   </gmd:characterSet>
   <gmd:parentIdentifier>
-      <gco:CharacterString>3fd917cb-986d-4d15-a04d-7f82a5857d29</gco:CharacterString>
+      <gco:CharacterString>3fd917cb-986d-4d15-a04d-7f82a5857d27</gco:CharacterString>
   </gmd:parentIdentifier>
   <gmd:contact>
       <gmd:CI_ResponsibleParty>

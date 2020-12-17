@@ -5,8 +5,7 @@ import uuid
 from datetime import datetime, date
 from zipfile import ZipFile
 from lxml import etree as etree_lxml
-from pyproj import CRS
-from pyproj import Transformer
+from pyproj import Proj, transform
 import paramiko
 import requests
 import json
@@ -78,26 +77,23 @@ def extractTileMetadata(sentinel_zip):
     pat = re.compile('.*_(\d{4})(\d{2})(\d{2})T.*(\d{4})(\d{2})(\d{2})T')
     match = re.match(pat, dataID)
     if match:
-        beginpos = '{}-{}-{}'.format(match[1], match[2], match[3])
-        endpos   = '{}-{}-{}'.format(match[4], match[5], match[6])
+        beginpos = '{}-{}-{}'.format(match.group(1), match.group(2), match.group(3))
+        endpos   = '{}-{}-{}'.format(match.group(4), match.group(5), match.group(6))
     else:
         beginpos = ''
         endpos = ''
 
     # determine geographic spatial extent by reprojecting
-    inProj = CRS(proj_epsg)
-    outProj = CRS('epsg:4326')
-    transformer = Transformer.from_crs(inProj, outProj)
-    # transform all corners
-    tl = transformer.transform(left              , top)
-    tr = transformer.transform(left + nrcols * 20, top)
-    br = transformer.transform(left + nrcols * 20, top - nrrows * 20)
-    bl = transformer.transform(left              , top - nrrows * 20)
-    extent = [tl, tr, br, bl]
-    lowlat = min([x[0] for x in extent])
-    highlat = max([x[0] for x in extent])
-    lowlon = min([x[1] for x in extent])
-    highlon = max([x[1] for x in extent])
+    inProj = Proj(init=proj_epsg)
+    outProj = Proj(init='epsg:4326')
+    # calculate for all corners of the extent
+    xx = [left, left + nrcols * 20, left + nrcols * 20, left]
+    yy = [top,  top,                top - nrrows * 20,  top - nrrows * 20]
+    lat, lon = transform(inProj, outProj, xx, yy)
+    lowlat = min(lat)
+    highlat = max(lat)
+    lowlon = min(lon)
+    highlon = max(lon)
     
     # Add datestamp of production of metadata (now)
     stamp = datetime.utcnow().replace(microsecond=0).isoformat()
@@ -121,16 +117,20 @@ def extractTileMetadata(sentinel_zip):
            }
  
 def updateMetadata(template, outname, perm_dict):
-    metatree = etree_lxml.parse(template)
-    namespaces = metatree.getroot().nsmap
-    for key in perm_dict.keys():
-        updateXPath(metatree, key, perm_dict[key], namespaces)
-    
-    metatree.write(outname, encoding = metatree.docinfo.encoding, xml_declaration = True)
+    try:
+        metatree = etree_lxml.parse(template)
+        print("Read template OK")
+        namespaces = metatree.getroot().nsmap
+        for key in perm_dict.keys():
+            updateXPath(metatree, key, perm_dict[key], namespaces)
+        
+        metatree.write(outname, encoding = metatree.docinfo.encoding, xml_declaration = True)
+    except IOError as err:
+        print("cannot create {}; error:{}".format(outname, err))
 
 def createMetadata(zipfile):
     parts = os.path.splitext(zipfile)
-    lai_meta_name = parts[0] + '.xml'        # name of the new metadata file
+    lai_meta_name = parts[0] + '.xml'             # name of the new metadata file
     meta_dict = extractTileMetadata(zipfile)      # all metadata from the data tile
 
     template = 'nextgeoss_template.xml'
@@ -140,6 +140,7 @@ def createMetadata(zipfile):
     return outname
 
 def shareLaiProduct(laifile, location, sid):
+    # laifile is the file or folder to share; it is best specified without path
     # location is the path without trailing separator, fe: /NextGeoss/2020-01-15
     path = location + '/' + os.path.basename(laifile)      # fe: /NextGeoss/2020-01-15/S2A_MSIL2A_20180508T104031_N0207_R008_T32ULC_20180508T175127_lai.tif
     share_url ='https://dikke.itc.utwente.nl:5001/webapi/entry.cgi'
@@ -197,22 +198,3 @@ def sharefile(laifile, location, user, pwd):
     
     return link
 
-def updateMetadata(template, outname, perm_dict):
-    metatree = etree_lxml.parse(template)
-    namespaces = metatree.getroot().nsmap
-    for key in perm_dict.keys():
-        updateXPath(metatree, key, perm_dict[key], namespaces)
-    
-    metatree.write(outname, encoding = metatree.docinfo.encoding, xml_declaration = True)
-
-# test function
-def createMetadata(zipfile):
-    parts = os.path.splitext(zipfile)
-    lai_meta_name = parts[0] + '.xml'             # name of the new metadata file
-    meta_dict = extractTileMetadata(zipfile)      # all metadata from the data tile
-
-    template = 'nextgeoss_template.xml'
-    outname = 'temp.xml'
-    updateMetadata(template, outname, meta_dict)
-   
-    return outname
