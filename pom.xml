@@ -11,7 +11,7 @@
     <version>2.0.0</version>
   </parent>
   <description>Pilot for extracting EBV-LAI from sentinel2</description>
-  <version>1.2</version>
+  <version>2.0-SNAPSHOT</version>
   <properties>
     <summary>Extract EBV LAI</summary>
     <description>Pilot for extracting EBV-LAI from sentinel2</description>
